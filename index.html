@@ -1,9 +1,16 @@
-<!DOCTYPE html>
+# Build a mobile-friendly, single-file 2048 with requested changes:
+# 1) Pause button, 2) Red tile palette, 3) Save highest score (global + per-player),
+# 4) Player name prompt on start, 5) Player best at bottom-right in blue,
+# 6) Fix: compute tile positions from board width (mobile visibility issue),
+# 7) Footer credit in red.
+from pathlib import Path
+
+html = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2048 — Retro (Mobile Optimized)</title>
+<title>2048 — Retro (Monika Mobile+)</title>
 <style>
   :root{
     --bg:#111214;
@@ -16,11 +23,11 @@
     --ok:#71e6a0;
     --grid:#2a2e36;
     --gap: clamp(6px, 2vw, 12px);
-    /* Board size scales to viewport; max keeps it comfy on desktop */
     --size: min(92vw, 520px);
-    --cell: calc((var(--size) - var(--gap)*3) / 4);
     --shadow: 0 10px 24px rgba(0,0,0,.35);
     --move-ms: 140ms;
+    --blue:#4aa3ff;
+    --red:#ff3b3b;
   }
 
   * { box-sizing: border-box; }
@@ -41,6 +48,7 @@
   .wrap{
     width: min(560px, 100%);
     display:flex; flex-direction:column; gap:12px;
+    position:relative;
   }
 
   .topbar{
@@ -72,7 +80,7 @@
     background:linear-gradient(180deg, #353b45, #262b34);
     color:var(--text); padding:12px 16px; border-radius:12px;
     border:1px solid #3b4150; box-shadow: var(--shadow); font-weight:800;
-    touch-action: manipulation; /* iOS: avoid double-tap zoom delay */
+    touch-action: manipulation;
   }
   button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .muted{ color:var(--muted); font-size:13px; }
@@ -89,14 +97,15 @@
     position:relative;
     width: var(--size);
     height: var(--size);
-    touch-action: none; /* allow custom swipe */
+    touch-action: none;
     margin:auto;
     overscroll-behavior: contain;
   }
   .grid{
     position:absolute; inset:0;
-    display:grid; grid-template-columns: repeat(4, var(--cell));
-    grid-template-rows: repeat(4, var(--cell));
+    display:grid; 
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: var(--gap);
   }
   .cell{
@@ -109,20 +118,18 @@
   .tiles{ position:absolute; inset:0; }
   .tile{
     position:absolute;
-    width: var(--cell); height: var(--cell);
     border-radius:12px;
     display:flex; align-items:center; justify-content:center;
     font-weight:900; 
-    /* Font scales with cell size; clamp keeps readable on tiny phones */
-    font-size: clamp(18px, calc(var(--cell)*0.38), 40px);
+    font-size: clamp(18px, 8vw, 40px);
     letter-spacing:.5px;
     transform: translate(var(--x), var(--y)) scale(1);
     transition: transform var(--move-ms) ease, box-shadow 120ms ease;
     will-change: transform;
     box-shadow: 0 6px 14px rgba(0,0,0,.35);
     user-select:none;
+    width:0; height:0; /* set via style */
   }
-  .v1024, .v2048 { font-size: clamp(14px, calc(var(--cell)*0.30), 34px); }
   .tile.bump{ animation: bump 120ms ease; }
   @keyframes bump{ 
     0%{ transform: translate(var(--x), var(--y)) scale(1); }
@@ -130,18 +137,18 @@
     100%{ transform: translate(var(--x), var(--y)) scale(1); } 
   }
 
-  /* Retro palette */
-  .v2   { background:#3b3f47; color:#fafafa; }
-  .v4   { background:#555b66; color:#fafafa; }
-  .v8   { background:#7a5b28; color:#fff4d6; }
-  .v16  { background:#9b6a2b; color:#fff4d6; }
-  .v32  { background:#b9782f; color:#fff4d6; }
-  .v64  { background:#d98633; color:#fff4d6; }
-  .v128 { background:#7f3fb0; color:#f2eaff; }
-  .v256 { background:#6b3fd9; color:#f0ecff; }
-  .v512 { background:#3e58e3; color:#eef5ff; }
-  .v1024{ background:#2aa8d1; color:#eafffb; }
-  .v2048{ background:#f7d354; color:#2a2300; text-shadow:0 1px 0 #ffeaa6; }
+  /* Red palette for tiles */
+  .v2   { background:#7a1b1b; color:#fff2f2; }
+  .v4   { background:#8c2020; color:#fff2f2; }
+  .v8   { background:#a32525; color:#fff2f2; }
+  .v16  { background:#b62b2b; color:#fff2f2; }
+  .v32  { background:#cc3333; color:#fff2f2; }
+  .v64  { background:#d93d3d; color:#fff2f2; }
+  .v128 { background:#e14a4a; color:#fff2f2; }
+  .v256 { background:#e85a5a; color:#fff2f2; }
+  .v512 { background:#ee6b6b; color:#fff2f2; }
+  .v1024{ background:#f17b7b; color:#2a0e0e; }
+  .v2048{ background:#f58c8c; color:#2a0e0e; text-shadow:0 1px 0 rgba(255,255,255,.6); }
 
   /* Banners */
   .banner{
@@ -156,7 +163,18 @@
   .banner.win{ color:var(--ok); }
   .banner.lose{ color:var(--danger); }
 
-  /* D-Pad shows only on touch devices (coarse pointers) */
+  /* Player best (bottom-right) */
+  .player-best{
+    position:absolute; right:6px; bottom:6px;
+    color: var(--blue);
+    font-weight:800;
+    background: rgba(20,20,30,.35);
+    border:1px solid rgba(80,120,255,.35);
+    padding:4px 8px; border-radius:10px;
+    font-size: 12px;
+  }
+
+  /* D-Pad only on touch */
   .dpad{ display:none; }
   @media (pointer: coarse){
     .dpad{
@@ -174,6 +192,23 @@
   .toggle input{ width:18px; height:18px; }
 
   .pixel { text-shadow: 0 1px 0 #000, 0 0 2px rgba(255,255,255,.05), 0 0 12px rgba(247,211,84,.2); }
+
+  /* Modal for player name */
+  .modal{
+    position: fixed; inset:0; background: rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px; z-index:10;
+  }
+  .modal-card{
+    width: min(520px, 96vw);
+    background:#1b1d21; border:1px solid #2c313a; border-radius:14px; 
+    padding:16px; color:#fff; box-shadow: var(--shadow);
+  }
+  .modal h2{ margin:6px 0 10px; font-size:18px; }
+  .modal label{ display:block; margin:10px 0 6px; color:#c9c9d2; }
+  .modal input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid #343a46; background:#121419; color:#fff; }
+  .modal .row{ margin-top:12px; justify-content:flex-end; }
+  .credit{ text-align:center; font-size:12px; color: var(--red); margin-top:6px; }
 </style>
 </head>
 <body>
@@ -181,7 +216,7 @@
     <div class="topbar">
       <div class="title">
         <h1 class="pixel" aria-label="Game title">2048 — Retro</h1>
-        <span class="badge" aria-hidden="true">MOBILE</span>
+        <span class="badge" aria-hidden="true">MOBILE+</span>
       </div>
       <div class="stats" role="group" aria-label="Score and time">
         <div class="chip" aria-live="polite"><small>SCORE</small><b id="score">0</b></div>
@@ -192,6 +227,7 @@
 
     <div class="row controls" role="group" aria-label="Game controls">
       <button id="btnNew" aria-label="Play or Restart game" title="Restart (R)">▶ Play / Restart</button>
+      <button id="btnPause" aria-label="Pause or Resume game" title="Pause (P)">⏸ Pause</button>
       <div class="toggle">
         <input type="checkbox" id="soundToggle" aria-label="Toggle sound effects" />
         <label for="soundToggle" class="muted">Sound</label>
@@ -213,6 +249,7 @@
           <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
         </div>
         <div id="tiles" class="tiles" aria-live="polite"></div>
+        <div id="playerBest" class="player-best" aria-live="polite">Player: - | Best: 0</div>
       </div>
     </section>
 
@@ -230,10 +267,23 @@
       </div>
       <div class="help">
         <b>How to play:</b> Merge tiles with the same number. Each move adds a new tile. Reach <b>2048</b> to win!  
-        <br/>Keyboard: arrows (or R to restart). Touch: swipe. Buttons are focusable and labeled for screen readers.
+        <br/>Keyboard: arrows (R restart, P pause). Touch: swipe. Buttons are focusable and labeled.
+        <div class="credit">created by - Monika Kushwaha</div>
       </div>
     </div>
   </main>
+
+  <!-- Player name modal -->
+  <div class="modal" id="nameModal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+    <div class="modal-card">
+      <h2 id="nameTitle">Enter Player Name</h2>
+      <label for="playerName">Your name</label>
+      <input id="playerName" type="text" placeholder="Monika" maxlength="24" />
+      <div class="row">
+        <button id="saveName">Save</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
@@ -244,10 +294,12 @@
   let nextId = 1;
   let tiles = new Map(); // id -> {id, value, r, c}
   let score = 0;
-  let best = Number(localStorage.getItem('best2048') || 0);
+  let best = Number(localStorage.getItem('best2048') || 0); // global best
+  let player = localStorage.getItem('player2048') || '';
   let playing = false;
   let won = false;
   let locked = false;
+  let paused = false;
   let startTime = null, timerHandle = null;
 
   // DOM refs
@@ -260,9 +312,49 @@
   const elBannerText = document.getElementById('bannerText');
   const elContinue = document.getElementById('btnContinue');
   const elBtnNew = document.getElementById('btnNew');
+  const elBtnPause = document.getElementById('btnPause');
   const soundToggle = document.getElementById('soundToggle');
+  const elPlayerBest = document.getElementById('playerBest');
+  const nameModal = document.getElementById('nameModal');
+  const nameInput = document.getElementById('playerName');
+  const saveNameBtn = document.getElementById('saveName');
 
   elBest.textContent = best;
+
+  // ====== Player name & per-player best ======
+  function playerKey(){ return `best2048_${(player||'').toLowerCase().trim()}`; }
+  function getPlayerBest(){
+    if(!player) return 0;
+    return Number(localStorage.getItem(playerKey()) || 0);
+  }
+  function setPlayerBest(val){
+    if(!player) return;
+    localStorage.setItem(playerKey(), String(val));
+  }
+  function updatePlayerBestUI(){
+    elPlayerBest.textContent = `Player: ${player||'-'} | Best: ${getPlayerBest()}`;
+  }
+
+  function ensurePlayerName(){
+    if(player){
+      updatePlayerBestUI();
+      nameModal.style.display = 'none';
+      return;
+    }
+    nameModal.style.display = 'flex';
+    setTimeout(()=> nameInput.focus(), 50);
+  }
+  saveNameBtn.addEventListener('click', ()=>{
+    player = (nameInput.value||'').trim();
+    if(!player) return;
+    localStorage.setItem('player2048', player);
+    updatePlayerBestUI();
+    nameModal.style.display = 'none';
+    reset();
+  });
+  nameInput.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ saveNameBtn.click(); }
+  });
 
   // ====== Simple WebAudio beeps ======
   let audioCtx = null;
@@ -285,6 +377,13 @@
   }
 
   // ====== Utilities ======
+  function boardMetrics(){
+    const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 8;
+    const bw = elBoard.clientWidth || 320;
+    const cell = (bw - gap*3)/4;
+    return { gap, bw, cell };
+  }
+
   function emptyCells(){
     const used = new Set([...tiles.values()].map(t=>`${t.r},${t.c}`));
     const list = [];
@@ -305,11 +404,12 @@
   }
 
   function reset(){
+    if(!player){ ensurePlayerName(); return; }
     tiles.clear();
     nextId = 1;
     score = 0;
-    updateScore(0);
-    playing = true; won = false; locked=false;
+    updateScore(0, true);
+    playing = true; won = false; locked=false; paused=false;
     hideBanner();
     addRandomTile(); addRandomTile();
     startClock();
@@ -320,6 +420,7 @@
     startTime = Date.now();
     if(timerHandle) clearInterval(timerHandle);
     timerHandle = setInterval(()=>{
+      if(paused) return;
       const s = Math.floor((Date.now()-startTime)/1000);
       const mm = String((s/60|0)).padStart(2,'0');
       const ss = String(s%60).padStart(2,'0');
@@ -343,13 +444,21 @@
     elBannerText.textContent = '';
   }
 
-  function updateScore(delta){
-    score += delta;
+  function updateScore(delta, resetFlag=false){
+    if(resetFlag){ score = 0; }
+    else{ score += delta; }
     elScore.textContent = score;
+
+    // Update global best
     if(score > best){
-      best = score;
-      elBest.textContent = best;
+      best = score; elBest.textContent = best;
       localStorage.setItem('best2048', best);
+    }
+    // Update player best
+    const pb = getPlayerBest();
+    if(score > pb){
+      setPlayerBest(score);
+      updatePlayerBestUI();
     }
   }
 
@@ -369,20 +478,17 @@
 
   // ====== Rendering ======
   function render(initial=false){
-    // Positions are based on CSS vars; we just map r,c to translate
-    const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
-    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--size'));
-    const cell = (size - gap*3)/4;
-    const px = (n)=> Math.round(n) + 'px';
-
+    const {gap, cell} = boardMetrics();
     elTiles.innerHTML = '';
     for(const t of tiles.values()){
       const x = (cell + gap)*t.c;
       const y = (cell + gap)*t.r;
       const d = document.createElement('div');
       d.className = `tile v${t.value}`;
-      d.style.setProperty('--x', px(x));
-      d.style.setProperty('--y', px(y));
+      d.style.setProperty('--x', Math.round(x)+'px');
+      d.style.setProperty('--y', Math.round(y)+'px');
+      d.style.width = Math.round(cell)+'px';
+      d.style.height = Math.round(cell)+'px';
       d.textContent = t.value;
       d.setAttribute('aria-label', `Tile ${t.value} at row ${t.r+1} column ${t.c+1}`);
       elTiles.appendChild(d);
@@ -391,19 +497,17 @@
   }
 
   function animatePositions(list){
-    const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
-    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--size'));
-    const cell = (size - gap*3)/4;
-    const px = (n)=> Math.round(n) + 'px';
-
+    const {gap, cell} = boardMetrics();
     elTiles.innerHTML = '';
     for(const t of list){
       const x = (cell + gap)*t.c;
       const y = (cell + gap)*t.r;
       const d = document.createElement('div');
       d.className = `tile v${t.value}`;
-      d.style.setProperty('--x', px(x));
-      d.style.setProperty('--y', px(y));
+      d.style.setProperty('--x', Math.round(x)+'px');
+      d.style.setProperty('--y', Math.round(y)+'px');
+      d.style.width = Math.round(cell)+'px';
+      d.style.height = Math.round(cell)+'px';
       d.textContent = t.value;
       d.dataset.id = t.id;
       elTiles.appendChild(d);
@@ -412,7 +516,7 @@
 
   // ====== Move Logic ======
   function move(direction){
-    if(!playing || locked) return false;
+    if(!playing || locked || paused) return false;
     const drc = {left:[0,-1], right:[0,1], up:[-1,0], down:[1,0]}[direction];
     if(!drc) return false;
 
@@ -500,6 +604,21 @@
     return true;
   }
 
+  // ====== Pause / Resume ======
+  function togglePause(){
+    if(!playing) return;
+    paused = !paused;
+    if(paused){
+      showBanner('Paused ⏸', null);
+      elBtnPause.textContent = '▶ Resume';
+      elBtnPause.title = 'Resume (P)';
+    }else{
+      hideBanner();
+      elBtnPause.textContent = '⏸ Pause';
+      elBtnPause.title = 'Pause (P)';
+    }
+  }
+
   // ====== Input Handling ======
   function onKey(e){
     const k = e.key;
@@ -508,6 +627,7 @@
     else if(k==='ArrowUp'){ e.preventDefault(); move('up'); }
     else if(k==='ArrowDown'){ e.preventDefault(); move('down'); }
     else if(k==='r' || k==='R'){ e.preventDefault(); reset(); }
+    else if(k==='p' || k==='P'){ e.preventDefault(); togglePause(); }
   }
 
   // D-Pad buttons
@@ -535,25 +655,30 @@
     tStart=null;
   }, {passive:true});
 
-  // Focus board for keyboard play (desktop)
+  // Focus board on pointerdown (desktop)
   elBoard.addEventListener('pointerdown', ()=> elBoard.focus());
 
   // Buttons
-  document.getElementById('btnNew').addEventListener('click', reset);
+  elBtnNew.addEventListener('click', reset);
   document.getElementById('btnContinue').addEventListener('click', ()=>{
     hideBanner(); playing = true; elBoard.focus();
   });
+  elBtnPause.addEventListener('click', togglePause);
 
   // Global keyboard
   window.addEventListener('keydown', onKey, {passive:false});
 
-  // Start immediately
-  reset();
+  // Start: ensure player name then reset
+  ensurePlayerName();
+  if(player){ reset(); }
 
-  // Resize listener to keep pixel-perfect placement when orientation changes
+  // Re-render on resize/orientation change
   window.addEventListener('resize', ()=>{ render(); }, {passive:true});
-
 })();
 </script>
 </body>
 </html>
+"""
+path = "/mnt/data/2048_retro_mobile_plus_monika.html"
+Path(path).write_text(html, encoding="utf-8")
+path
