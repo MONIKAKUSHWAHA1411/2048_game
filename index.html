@@ -1,9 +1,12 @@
-<!DOCTYPE html>
+# Build updated single-file game HTML with QR scanner removed and social sharing added.
+from pathlib import Path
+
+html = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2048 — Retro (Monika — Mobile+ Clean + LinkedIn + QR Scan)</title>
+<title>2048 — Retro (Monika — Share Ready)</title>
 <style>
   :root{
     --bg:#111214; --panel:#1b1d21; --panel-2:#20232a; --text:#f7f7f7; --muted:#b8b8c2;
@@ -11,18 +14,14 @@
     --size: min(92vw, 520px); --shadow: 0 10px 24px rgba(0,0,0,.35); --move-ms: 140ms;
     --blue:#4aa3ff; --red:#ff3b3b; --li-blue:#0A66C2;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:
+  *{box-sizing:border-box} html,body{height:100%}
+  body{ margin:0; background:
       radial-gradient(1200px 600px at 20% -20%, rgba(255,255,255,.04), transparent 60%),
       radial-gradient(1200px 600px at 120% 120%, rgba(255,255,255,.04), transparent 60%),
       var(--bg);
-    color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
     display:flex; align-items:center; justify-content:center;
-    padding:max(16px, env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
-    overscroll-behavior:contain;
-  }
+    padding:max(16px, env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom)); overscroll-behavior:contain;}
   .wrap{ width:min(560px,100%); display:flex; flex-direction:column; gap:12px; position:relative; }
   .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .title{ display:flex; align-items:baseline; gap:10px; line-height:1; }
@@ -32,70 +31,41 @@
     color:var(--accent); font-weight:700; font-size:12px; border:1px solid #3a3f49; box-shadow:var(--shadow); }
   .stats{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .chip{ background:var(--panel); border:1px solid #2c313a; border-radius:10px; padding:8px 10px; min-width:88px; text-align:center; box-shadow:var(--shadow) }
-  .chip b{ display:block; font-size:clamp(16px,4vw,18px) }
-  .chip small{ color:var(--muted) }
+  .chip b{ display:block; font-size:clamp(16px,4vw,18px) } .chip small{ color:var(--muted) }
   .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   button{ appearance:none; border:none; cursor:pointer; background:linear-gradient(180deg,#353b45,#262b34);
     color:var(--text); padding:12px 16px; border-radius:12px; border:1px solid #3b4150; box-shadow:var(--shadow);
-    font-weight:800; touch-action:manipulation }
-  button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+    font-weight:800; touch-action:manipulation } button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
   .muted{ color:var(--muted); font-size:13px }
-
   .board-outer{ position:relative; background:linear-gradient(180deg,var(--panel-2),var(--panel)); padding:var(--gap);
     border-radius:14px; border:1px solid #2c313a; box-shadow:var(--shadow) }
   .board{ position:relative; width:var(--size); height:var(--size); touch-action:none; margin:auto; overscroll-behavior:contain }
   .grid{ position:absolute; inset:0; display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(4,1fr); gap:var(--gap) }
-  .cell{ background:var(--grid); border-radius:12px; border:1px solid #3a3f49 }
-  .tiles{ position:absolute; inset:0 }
+  .cell{ background:var(--grid); border-radius:12px; border:1px solid #3a3f49 } .tiles{ position:absolute; inset:0 }
   .tile{ position:absolute; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:900;
     font-size:clamp(18px,8vw,40px); letter-spacing:.5px; transform:translate(var(--x),var(--y)) scale(1);
     transition:transform var(--move-ms) ease,box-shadow 120ms ease; will-change:transform; box-shadow:0 6px 14px rgba(0,0,0,.35);
-    user-select:none; width:0; height:0 }
-  .tile.bump{ animation:bump 120ms ease }
+    user-select:none; width:0; height:0 } .tile.bump{ animation:bump 120ms ease }
   @keyframes bump{ 0%{transform:translate(var(--x),var(--y)) scale(1)} 50%{transform:translate(var(--x),var(--y)) scale(1.06)} 100%{transform:translate(var(--x),var(--y)) scale(1)} }
-
-  /* Red palette */
   .v2{background:#7a1b1b;color:#fff2f2} .v4{background:#8c2020;color:#fff2f2} .v8{background:#a32525;color:#fff2f2}
   .v16{background:#b62b2b;color:#fff2f2} .v32{background:#cc3333;color:#fff2f2} .v64{background:#d93d3d;color:#fff2f2}
   .v128{background:#e14a4a;color:#fff2f2} .v256{background:#e85a5a;color:#fff2f2} .v512{background:#ee6b6b;color:#fff2f2}
   .v1024{background:#f17b7b;color:#2a0e0e} .v2048{background:#f58c8c;color:#2a0e0e;text-shadow:0 1px 0 rgba(255,255,255,.6)}
-
-  /* Win/Lose banner (pause uses no banner) */
   .banner{ position:absolute; left:0; right:0; top:-12px; margin:auto; width:max-content; max-width:95%;
     background:linear-gradient(180deg,#2c313a,#21262e); border:1px solid #3a3f49; color:var(--text);
     padding:8px 12px; border-radius:999px; box-shadow:var(--shadow); display:none; align-items:center; gap:8px }
   .banner.show{ display:flex } .banner.win{ color:var(--ok) } .banner.lose{ color:var(--danger) }
-
   .player-best{ position:absolute; right:6px; bottom:6px; color:var(--blue); font-weight:800;
     background:rgba(20,20,30,.35); border:1px solid rgba(80,120,255,.35); padding:4px 8px; border-radius:10px; font-size:12px }
-
-  /* D-Pad on coarse pointers */
-  .dpad{ display:none }
-  @media (pointer:coarse){
-    .dpad{ display:grid; grid-template-columns:64px 64px 64px; grid-template-rows:64px 64px 64px; gap:10px }
-    .dpad button{ padding:0; width:64px; height:64px; border-radius:12px; font-size:24px }
-    .dpad .empty{ visibility:hidden }
-  }
-
-  .row{ display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap }
-  .help{ font-size:13px; color:var(--muted); line-height:1.5 }
+  .dpad{ display:none } @media (pointer:coarse){ .dpad{ display:grid; grid-template-columns:64px 64px 64px; grid-template-rows:64px 64px 64px; gap:10px }
+    .dpad button{ padding:0; width:64px; height:64px; border-radius:12px; font-size:24px } .dpad .empty{ visibility:hidden } }
+  .row{ display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap } .help{ font-size:13px; color:var(--muted); line-height:1.5 }
   .toggle{ display:flex; align-items:center; gap:8px } .toggle input{ width:18px; height:18px }
   .pixel{ text-shadow:0 1px 0 #000,0 0 2px rgba(255,255,255,.05),0 0 12px rgba(247,211,84,.2) }
-
-  /* Credit with LinkedIn */
   .credit{ text-align:center; font-size:12px; color:var(--red); margin-top:6px; display:flex; align-items:center; gap:6px; justify-content:center }
-  .credit a.name{ color:var(--red); text-decoration:none }
-  .credit a.li{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:3px; background:var(--li-blue) }
+  .credit a.name{ color:var(--red); text-decoration:none } .credit a.li{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:3px; background:#0A66C2 }
   .credit a.li svg{ width:14px; height:14px; fill:#fff; display:block }
-
-  /* QR scanner panel */
-  details.qr{ background:var(--panel); border:1px solid #2c313a; border-radius:12px; padding:10px 12px }
-  details.qr summary{ cursor:pointer; outline:none }
-  .qrBox{ display:grid; gap:8px; margin-top:8px }
-  video#qrVideo{ width:100%; max-height:240px; background:#000; border-radius:10px }
-  .qrRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
-  .pill{ background:#233; color:#bfe; border:1px solid #345; padding:6px 10px; border-radius:999px; font-size:12px }
-</style>
+  /* Share menu */\n  .shareMenu{ position:relative }\n  .shareList{ position:absolute; z-index:5; top:110%; left:0; background:#1b1d21; border:1px solid #2c313a; border-radius:12px; padding:8px; display:none; min-width:220px; box-shadow:var(--shadow) }\n  .shareList a, .shareList button{ display:block; width:100%; text-align:left; background:transparent; border:none; color:#e6e6e6; padding:8px 10px; border-radius:8px; cursor:pointer }\n  .shareList a:hover, .shareList button:hover{ background:#2a2f39 }\n</style>
 </head>
 <body>
   <main class="wrap" aria-label="2048 game page">
@@ -114,6 +84,17 @@
     <div class="row controls" role="group" aria-label="Game controls">
       <button id="btnNew" aria-label="Play or Restart game" title="Restart (R)">▶ Play / Restart</button>
       <button id="btnPause" aria-label="Pause or Resume game" title="Pause (P)">⏸ Pause</button>
+      <div class="shareMenu">
+        <button id="btnShare" aria-label="Share score and link">🔗 Share</button>
+        <div class="shareList" id="shareList" role="menu" aria-label="Share options">
+          <button id="copyBtn">Copy link</button>
+          <a id="tw" target="_blank" rel="noopener">Share on X (Twitter)</a>
+          <a id="li" target="_blank" rel="noopener">Share on LinkedIn</a>
+          <a id="wa" target="_blank" rel="noopener">Share on WhatsApp</a>
+          <a id="fb" target="_blank" rel="noopener">Share on Facebook</a>
+          <a id="tg" target="_blank" rel="noopener">Share on Telegram</a>
+        </div>
+      </div>
       <div class="toggle">
         <input type="checkbox" id="soundToggle" aria-label="Toggle sound effects" />
         <label for="soundToggle" class="muted">Sound</label>
@@ -161,23 +142,6 @@
         </div>
       </div>
     </div>
-
-    <details class="qr">
-      <summary>📷 Open QR Scanner (camera)</summary>
-      <div class="qrBox">
-        <div class="qrRow">
-          <button id="qrStart">Start</button>
-          <button id="qrStop">Stop</button>
-          <span id="qrSupport" class="pill" aria-live="polite"></span>
-        </div>
-        <video id="qrVideo" playsinline muted></video>
-        <div class="qrRow">
-          <span class="muted">Result:</span>
-          <input id="qrOut" type="text" readonly style="flex:1; padding:8px 10px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff"/>
-          <button id="qrOpen" disabled>Open</button>
-        </div>
-      </div>
-    </details>
   </main>
 
   <div class="modal" id="nameModal" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
@@ -191,8 +155,9 @@
 
 <script>
 (() => {
+  const DEPLOY_URL = "https://monikakushwaha1411.github.io/2048_game/";
   const SIZE=4, PROB_4=0.10, MOVE_MS=140; let nextId=1; let tiles=new Map(); let score=0;
-  let best=Number(localStorage.getItem('best2048')||0); let player=localStorage.getItem('player2048')||'';
+  let best=Number(localStorage.getItem('best2048')||0); let player=(new URLSearchParams(location.search).get('player')||localStorage.getItem('player2048')||'');
   let playing=false, won=false, locked=false, paused=false; let startTime=null, timerHandle=null;
 
   const elScore=document.getElementById('score'), elBest=document.getElementById('best'), elTime=document.getElementById('time');
@@ -202,82 +167,221 @@
   const elContinue=document.getElementById('btnContinue'), soundToggle=document.getElementById('soundToggle');
   const elPlayerBest=document.getElementById('playerBest');
   const nameModal=document.getElementById('nameModal'), nameInput=document.getElementById('playerName'), saveNameBtn=document.getElementById('saveName');
+  const btnShare=document.getElementById('btnShare'), shareList=document.getElementById('shareList');
+  const aTw=document.getElementById('tw'), aLi=document.getElementById('li'), aWa=document.getElementById('wa'), aFb=document.getElementById('fb'), aTg=document.getElementById('tg'), copyBtn=document.getElementById('copyBtn');
 
   elBest.textContent = best;
+
   function playerKey(){ return `best2048_${(player||'').toLowerCase().trim()}`; }
   function getPlayerBest(){ return player ? Number(localStorage.getItem(playerKey())||0) : 0; }
   function setPlayerBest(v){ if(player) localStorage.setItem(playerKey(), String(v)); }
   function updatePlayerBestUI(){ elPlayerBest.textContent = `Player: ${player||'-'} | Best: ${getPlayerBest()}`; }
 
-  function ensurePlayerName(){ if(player){ updatePlayerBestUI(); nameModal.style.display='none'; return; } nameModal.style.display='flex'; setTimeout(()=>nameInput.focus(),50); }
-  saveNameBtn.addEventListener('click', ()=>{ player=(nameInput.value||'').trim(); if(!player) return; localStorage.setItem('player2048',player); updatePlayerBestUI(); nameModal.style.display='none'; reset(); });
+  function ensurePlayerName(){
+    if(player){ localStorage.setItem('player2048', player); updatePlayerBestUI(); nameModal.style.display='none'; return; }
+    nameModal.style.display='flex'; setTimeout(()=> nameInput.focus(), 50);
+  }
+  saveNameBtn.addEventListener('click', ()=>{
+    player = (nameInput.value||'').trim(); if(!player) return;
+    localStorage.setItem('player2048', player); updatePlayerBestUI();
+    nameModal.style.display='none'; reset();
+  });
   nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter') saveNameBtn.click(); });
 
-  let audioCtx=null; function beep(type='move'){ if(!soundToggle.checked) return; if(!audioCtx){ try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch{}} if(!audioCtx) return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g).connect(audioCtx.destination); o.type='square'; const now=audioCtx.currentTime, f=(type==='merge')?740:420; o.frequency.setValueAtTime(f,now); g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.2,now+0.01); g.gain.exponentialRampToValueAtTime(0.0001,now+(type==='merge'?0.18:0.12)); o.start(now); o.stop(now+(type==='merge'?0.2:0.14)); }
+  let audioCtx=null;
+  function beep(type='move'){
+    if(!soundToggle.checked) return;
+    if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch{} }
+    if(!audioCtx) return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.connect(g).connect(audioCtx.destination); o.type='square';
+    const now=audioCtx.currentTime, f=(type==='merge')?740:420;
+    o.frequency.setValueAtTime(f,now);
+    g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(0.2,now+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+(type==='merge'?0.18:0.12));
+    o.start(now); o.stop(now+(type==='merge'?0.2:0.14));
+  }
 
   function boardMetrics(){ const gap=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap'))||8; const bw=elBoard.clientWidth||320; const cell=(bw-gap*3)/4; return {gap,cell}; }
   function emptyCells(){ const used=new Set([...tiles.values()].map(t=>`${t.r},${t.c}`)), list=[]; for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){ const k=`${r},${c}`; if(!used.has(k)) list.push([r,c]); } return list; }
   function addRandomTile(){ const empties=emptyCells(); if(!empties.length) return false; const [r,c]=empties[(Math.random()*empties.length)|0]; const t={id:nextId++, value:Math.random()<PROB_4?4:2, r, c}; tiles.set(t.id,t); return true; }
 
-  function updateScore(delta,reset=false){ score=reset?0:score+delta; elScore.textContent=score; if(score>best){ best=score; elBest.textContent=best; localStorage.setItem('best2048',best);} const pb=getPlayerBest(); if(score>pb){ setPlayerBest(score); updatePlayerBestUI(); } }
-  function reset(){ if(!player){ ensurePlayerName(); return; } tiles.clear(); nextId=1; updateScore(0,true); playing=true; won=false; locked=false; paused=false; hideBanner(); addRandomTile(); addRandomTile(); startClock(); render(true); }
-  function startClock(){ startTime=Date.now(); if(timerHandle) clearInterval(timerHandle); timerHandle=setInterval(()=>{ if(paused) return; const s=Math.floor((Date.now()-startTime)/1000); const mm=String((s/60|0)).padStart(2,'0'), ss=String(s%60).padStart(2,'0'); elTime.textContent=`${mm}:${ss}`; },200); }
-  function hasMoves(){ if(emptyCells().length>0) return true; const byPos=Array.from(tiles.values()).reduce((m,t)=>{m[`${t.r},${t.c}`]=t.value; return m;},{}); for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){ const v=byPos[`${r},${c}`]; if(v==null) continue; if(r+1<SIZE && byPos[`${r+1},${c}`]===v) return true; if(c+1<SIZE && byPos[`${r},${c+1}`]===v) return true; } return false; }
+  function updateScore(delta,reset=false){
+    score = reset ? 0 : score + delta; elScore.textContent = score;
+    if(score>best){ best=score; elBest.textContent=best; localStorage.setItem('best2048', best); }
+    const pb = getPlayerBest(); if(score>pb){ setPlayerBest(score); updatePlayerBestUI(); }
+  }
 
-  function render(initial=false){ const {gap,cell}=boardMetrics(); elTiles.innerHTML=''; for(const t of tiles.values()){ const x=(cell+gap)*t.c, y=(cell+gap)*t.r; const d=document.createElement('div'); d.className=`tile v${t.value}`; d.style.setProperty('--x',Math.round(x)+'px'); d.style.setProperty('--y',Math.round(y)+'px'); d.style.width=Math.round(cell)+'px'; d.style.height=Math.round(cell)+'px'; d.textContent=t.value; d.setAttribute('aria-label',`Tile ${t.value} at row ${t.r+1} column ${t.c+1}`); elTiles.appendChild(d); if(initial){ d.classList.add('bump'); setTimeout(()=>d.classList.remove('bump'),160);} } }
-  function animatePositions(list){ const {gap,cell}=boardMetrics(); elTiles.innerHTML=''; for(const t of list){ const x=(cell+gap)*t.c, y=(cell+gap)*t.r; const d=document.createElement('div'); d.className=`tile v${t.value}`; d.style.setProperty('--x',Math.round(x)+'px'); d.style.setProperty('--y',Math.round(y)+'px'); d.style.width=Math.round(cell)+'px'; d.style.height=Math.round(cell)+'px'; d.textContent=t.value; d.dataset.id=t.id; elTiles.appendChild(d);} }
+  function reset(){
+    if(!player){ ensurePlayerName(); return; }
+    tiles.clear(); nextId=1; updateScore(0,true);
+    playing=true; won=false; locked=false; paused=false;
+    hideBanner(); addRandomTile(); addRandomTile(); startClock(); render(true);
+  }
 
-  function move(direction){ if(!playing||locked||paused) return false; const drc={left:[0,-1],right:[0,1],up:[-1,0],down:[1,0]}[direction]; if(!drc) return false; const grid=Array.from({length:SIZE},()=>Array(SIZE).fill(null)); for(const t of tiles.values()) grid[t.r][t.c]=t.id; const order=[]; if(direction==='left'){ for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) order.push([r,c]); } if(direction==='right'){ for(let r=0;r<SIZE;r++) for(let c=SIZE-1;c>=0;c--) order.push([r,c]); } if(direction==='up'){ for(let c=0;c<SIZE;c++) for(let r=0;r<SIZE;r++) order.push([r,c]); } if(direction==='down'){ for(let c=0;c<SIZE;c++) for(let r=SIZE-1;r>=0;r--) order.push([r,c]); }
+  function startClock(){
+    startTime = Date.now(); if(timerHandle) clearInterval(timerHandle);
+    timerHandle = setInterval(()=>{
+      if(paused) return;
+      const s = Math.floor((Date.now()-startTime)/1000);
+      const mm = String((s/60|0)).padStart(2,'0'), ss = String(s%60).padStart(2,'0');
+      elTime.textContent = `${mm}:${ss}`;
+    }, 200);
+  }
+
+  function hasMoves(){
+    if(emptyCells().length>0) return true;
+    const byPos = Array.from(tiles.values()).reduce((m,t)=>{ m[`${t.r},${t.c}`]=t.value; return m; },{});
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      const v=byPos[`${r},${c}`]; if(v==null) continue;
+      if(r+1<SIZE && byPos[`${r+1},${c}`]===v) return true;
+      if(c+1<SIZE && byPos[`${r},${c+1}`]===v) return true;
+    } return false;
+  }
+
+  function render(initial=false){
+    const {gap,cell}=boardMetrics(); elTiles.innerHTML='';
+    for(const t of tiles.values()){
+      const x=(cell+gap)*t.c, y=(cell+gap)*t.r;
+      const d=document.createElement('div');
+      d.className=`tile v${t.value}`;
+      d.style.setProperty('--x', Math.round(x)+'px');
+      d.style.setProperty('--y', Math.round(y)+'px');
+      d.style.width=Math.round(cell)+'px'; d.style.height=Math.round(cell)+'px';
+      d.textContent=t.value; d.setAttribute('aria-label', `Tile ${t.value} at row ${t.r+1} column ${t.c+1}`);
+      elTiles.appendChild(d); if(initial){ d.classList.add('bump'); setTimeout(()=>d.classList.remove('bump'), 160); }
+    }
+  }
+
+  function animatePositions(list){
+    const {gap,cell}=boardMetrics(); elTiles.innerHTML='';
+    for(const t of list){
+      const x=(cell+gap)*t.c, y=(cell+gap)*t.r;
+      const d=document.createElement('div');
+      d.className=`tile v${t.value}`;
+      d.style.setProperty('--x', Math.round(x)+'px');
+      d.style.setProperty('--y', Math.round(y)+'px');
+      d.style.width=Math.round(cell)+'px'; d.style.height=Math.round(cell)+'px';
+      d.textContent=t.value; d.dataset.id=t.id; elTiles.appendChild(d);
+    }
+  }
+
+  function move(direction){
+    if(!playing||locked||paused) return false;
+    const drc={left:[0,-1], right:[0,1], up:[-1,0], down:[1,0]}[direction]; if(!drc) return false;
+    const grid = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+    for(const t of tiles.values()) grid[t.r][t.c]=t.id;
+    const order=[];
+    if(direction==='left'){ for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) order.push([r,c]); }
+    if(direction==='right'){ for(let r=0;r<SIZE;r++) for(let c=SIZE-1;c>=0;c--) order.push([r,c]); }
+    if(direction==='up'){ for(let c=0;c<SIZE;c++) for(let r=0;r<SIZE;r++) order.push([r,c]); }
+    if(direction==='down'){ for(let c=0;c<SIZE;c++) for(let r=SIZE-1;r>=0;r--) order.push([r,c]); }
     let moved=false; const mergedAt=new Set();
-    for(const [r0,c0] of order){ let id=grid[r0][c0]; if(id==null) continue; let t=tiles.get(id); let r=r0,c=c0; while(true){ const r1=r+drc[0], c1=c+drc[1]; if(r1<0||r1>=SIZE||c1<0||c1>=SIZE) break; if(grid[r1][c1]==null){ grid[r1][c1]=id; grid[r][c]=null; r=r1; c=c1; moved=true; } else { const otherId=grid[r1][c1]; const other=tiles.get(otherId); const mkey=`${r1},${c1}`; if(other && other.value===t.value && !mergedAt.has(mkey)){ grid[r][c]=null; grid[r1][c1]=-1; mergedAt.add(mkey); t.r=r1; t.c=c1; } break; } } if(grid[r][c]===id){ t.r=r; t.c=c; } }
-    if(!moved && mergedAt.size===0) return false; animatePositions([...tiles.values()]); locked=true; setTimeout(()=>{ let gained=0; const toDelete=[]; const posMap=new Map(); for(const t of tiles.values()){ const key=`${t.r},${t.c}`; if(!posMap.has(key)) posMap.set(key,[]); posMap.get(key).push(t);} for(const [key,arr] of posMap.entries()){ if(arr.length>=2){ arr.sort((a,b)=>a.id-b.id); const [a,b]=arr; if(a.value===b.value){ const [r,c]=key.split(',').map(Number); toDelete.push(a.id,b.id); const merged={id:nextId++, value:a.value*2, r, c}; tiles.set(merged.id,merged); gained+=merged.value; } } } for(const id of toDelete) tiles.delete(id); if(gained>0){ updateScore(gained); beep('merge'); } if(moved) addRandomTile(); render(); if(!won && [...tiles.values()].some(t=>t.value===2048)){ won=true; showBanner('You win! 🎉','win'); } if(!hasMoves()){ playing=false; showBanner('Game over. Try again!','lose'); } locked=false; }, MOVE_MS+10); return true; }
+    for(const [r0,c0] of order){
+      let id=grid[r0][c0]; if(id==null) continue; let t=tiles.get(id); let r=r0,c=c0;
+      while(true){
+        const r1=r+drc[0], c1=c+drc[1];
+        if(r1<0||r1>=SIZE||c1<0||c1>=SIZE) break;
+        if(grid[r1][c1]==null){ grid[r1][c1]=id; grid[r][c]=null; r=r1; c=c1; moved=true; }
+        else{
+          const otherId=grid[r1][c1]; const other=tiles.get(otherId); const mkey=`${r1},${c1}`;
+          if(other && other.value===t.value && !mergedAt.has(mkey)){ grid[r][c]=null; grid[r1][c1]=-1; mergedAt.add(mkey); t.r=r1; t.c=c1; }
+          break;
+        }
+      }
+      if(grid[r][c]===id){ t.r=r; t.c=c; }
+    }
+    if(!moved && mergedAt.size===0) return false;
+    animatePositions([...tiles.values()]); locked=true;
+    setTimeout(()=>{
+      let gained=0; const toDelete=[]; const posMap=new Map();
+      for(const t of tiles.values()){ const key=`${t.r},${t.c}`; if(!posMap.has(key)) posMap.set(key,[]); posMap.get(key).push(t); }
+      for(const [key,arr] of posMap.entries()){
+        if(arr.length>=2){ arr.sort((a,b)=>a.id-b.id); const [a,b]=arr;
+          if(a.value===b.value){ const [r,c]=key.split(',').map(Number);
+            toDelete.push(a.id,b.id); const merged={id:nextId++, value:a.value*2, r, c}; tiles.set(merged.id, merged); gained+=merged.value; }
+        }}
+      for(const id of toDelete) tiles.delete(id);
+      if(gained>0){ updateScore(gained); beep('merge'); }
+      if(moved) addRandomTile();
+      render();
+      if(!won && [...tiles.values()].some(t=>t.value===2048)){ won=true; showBanner('You win! 🎉','win'); }
+      if(!hasMoves()){ playing=false; showBanner('Game over. Try again!','lose'); }
+      locked=false;
+    }, MOVE_MS+10);
+    return true;
+  }
 
   function showBanner(msg,type){ elBannerText.textContent=msg; elBanner.classList.add('show'); elBanner.classList.toggle('win', type==='win'); elBanner.classList.toggle('lose', type==='lose'); }
   function hideBanner(){ elBanner.classList.remove('show','win','lose'); elBannerText.textContent=''; }
+  function togglePause(){ if(!playing) return; paused=!paused; if(paused){ elBtnPause.textContent='▶ Resume'; elBtnPause.title='Resume (P)'; } else { elBtnPause.textContent='⏸ Pause'; elBtnPause.title='Pause (P)'; } }
 
-  function togglePause(){ if(!playing) return; paused=!paused; if(paused){ /* No banner on pause per request */ elBtnPause.textContent='▶ Resume'; elBtnPause.title='Resume (P)'; } else { elBtnPause.textContent='⏸ Pause'; elBtnPause.title='Pause (P)'; } }
+  function onKey(e){
+    const k=e.key;
+    if(k==='ArrowLeft'){ e.preventDefault(); move('left'); }
+    else if(k==='ArrowRight'){ e.preventDefault(); move('right'); }
+    else if(k==='ArrowUp'){ e.preventDefault(); move('up'); }
+    else if(k==='ArrowDown'){ e.preventDefault(); move('down'); }
+    else if(k==='r'||k==='R'){ e.preventDefault(); reset(); }
+    else if(k==='p'||k==='P'){ e.preventDefault(); togglePause(); }
+  }
 
-  function onKey(e){ const k=e.key; if(k==='ArrowLeft'){ e.preventDefault(); move('left'); } else if(k==='ArrowRight'){ e.preventDefault(); move('right'); } else if(k==='ArrowUp'){ e.preventDefault(); move('up'); } else if(k==='ArrowDown'){ e.preventDefault(); move('down'); } else if(k==='r'||k==='R'){ e.preventDefault(); reset(); } else if(k==='p'||k==='P'){ e.preventDefault(); togglePause(); } }
-
-  [['up','up'],['down','down'],['left','left'],['right','right']].forEach(([id,dir])=>{ const btn=document.getElementById(id); if(btn) btn.addEventListener('click', ()=>move(dir)); });
+  [['up','up'],['down','down'],['left','left'],['right','right']].forEach(([id,dir])=>{
+    const btn=document.getElementById(id); if(btn) btn.addEventListener('click', ()=>move(dir));
+  });
   let tStart=null; elBoard.addEventListener('touchstart', e=>{ if(e.touches.length!==1) return; const t=e.touches[0]; tStart={x:t.clientX,y:t.clientY}; }, {passive:true});
-  elBoard.addEventListener('touchend', e=>{ if(!tStart) return; const t=e.changedTouches[0]; const dx=t.clientX-tStart.x, dy=t.clientY-tStart.y; const adx=Math.abs(dx), ady=Math.abs(dy), TH=24; if(Math.max(adx,ady)<TH){ tStart=null; return; } move(adx>ady ? (dx<0?'left':'right') : (dy<0?'up':'down')); tStart=null; }, {passive:true});
+  elBoard.addEventListener('touchend', e=>{ if(!tStart) return; const t=e.changedTouches[0]; const dx=t.clientX-tStart.x, dy=t.clientY-tStart.y; const adx=Math.abs(dx), ady=Math.abs(dy), TH=24; if(Math.max(adx,ady) < TH){ tStart=null; return; } move(adx>ady ? (dx<0?'left':'right') : (dy<0?'up':'down')); tStart=null; }, {passive:true});
 
   elBoard.addEventListener('pointerdown', ()=> elBoard.focus());
-  elBtnNew.addEventListener('click', reset); elBtnPause.addEventListener('click', togglePause);
+  elBtnNew.addEventListener('click', reset);
+  elBtnPause.addEventListener('click', togglePause);
   elContinue.addEventListener('click', ()=>{ hideBanner(); playing=true; elBoard.focus(); });
-  window.addEventListener('keydown', onKey, {passive:false}); window.addEventListener('resize', ()=>render(), {passive:true});
+
+  window.addEventListener('keydown', onKey, {passive:false});
+  window.addEventListener('resize', ()=> render(), {passive:true});
 
   ensurePlayerName(); if(player) reset();
 
-  // ===== QR Scanner with BarcodeDetector (no external libs) =====
-  const qrSupport = document.getElementById('qrSupport');
-  const qrVideo = document.getElementById('qrVideo');
-  const qrStart = document.getElementById('qrStart');
-  const qrStop = document.getElementById('qrStop');
-  const qrOut = document.getElementById('qrOut');
-  const qrOpen = document.getElementById('qrOpen');
-  let detector = null; let stream = null; let scanId = 0; let scanning = false;
+  // ===== Share =====
+  function makeShareLink(){
+    const params = new URLSearchParams({ player: player || '' });
+    const url = DEPLOY_URL + (params.toString() ? ('?' + params.toString()) : '');
+    const text = `${player || 'I'} scored ${score} in 2048! Play now:`;
+    return { url, text };
+  }
+  function setShareLinks(){
+    const {url, text} = makeShareLink();
+    aTw.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    aLi.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    aWa.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`;
+    aFb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    aTg.href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  }
+  setShareLinks();
 
-  async function initDetector(){
-    if ('BarcodeDetector' in window) {
-      const formats = await BarcodeDetector.getSupportedFormats?.();
-      if(!formats || formats.includes('qr_code')){ detector = new BarcodeDetector({formats:['qr_code']}); qrSupport.textContent = 'QR supported'; return true; }
+  btnShare.addEventListener('click', async () => {
+    const {url, text} = makeShareLink();
+    if (navigator.share) {
+      try{ await navigator.share({ title: '2048 — Retro', text, url }); }
+      catch(_){} // ignore
+    } else {
+      shareList.style.display = shareList.style.display === 'block' ? 'none' : 'block';
+      setShareLinks();
     }
-    qrSupport.textContent = 'QR not supported (try Chrome on Android/iOS)'; return false;
-  }
-  async function startScan(){
-    if(scanning) return; const ok = detector || await initDetector(); if(!ok) return;
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: {ideal:'environment'} } });
-      qrVideo.srcObject = stream; await qrVideo.play(); scanning = true; tick();
-    }catch(e){ qrSupport.textContent = 'Camera blocked'; }
-  }
-  function stopScan(){ scanning=false; cancelAnimationFrame(scanId); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } qrVideo.srcObject=null; }
-  async function tick(){ if(!scanning) return; try{ const det = await detector.detect(qrVideo); if(det && det[0]){ const txt = det[0].rawValue || det[0].raw || ''; qrOut.value = txt; qrOpen.disabled = !txt; } }catch{} scanId = requestAnimationFrame(tick); }
-  qrStart.addEventListener('click', startScan); qrStop.addEventListener('click', stopScan);
-  qrOpen.addEventListener('click', ()=>{ const v = qrOut.value.trim(); if(!v) return; try{ new URL(v); location.href=v; }catch{ location.href = 'https://'+v; } });
+  });
+  document.addEventListener('click', (e)=>{
+    if(!shareList.contains(e.target) && e.target !== btnShare){ shareList.style.display = 'none'; }
+  });
+  copyBtn.addEventListener('click', async ()=>{
+    const {url} = makeShareLink();
+    try{ await navigator.clipboard.writeText(url); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy link', 1200); }catch{}
+  });
 })();
 </script>
 </body>
 </html>
+"""
+path = "/mnt/data/2048_monika_share.html"
+Path(path).write_text(html, encoding="utf-8")
+path
