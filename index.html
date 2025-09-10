@@ -1,4 +1,5 @@
-# Build updated single-file game HTML with QR scanner removed and social sharing added.
+# Build a clean single-file HTML with *only* a "Copy link" (no social networks) 
+# and ensure no stray text outside the HTML block.
 from pathlib import Path
 
 html = r"""<!DOCTYPE html>
@@ -6,7 +7,7 @@ html = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2048 — Retro (Monika — Share Ready)</title>
+<title>2048 — Retro (Monika — Copy Link Only)</title>
 <style>
   :root{
     --bg:#111214; --panel:#1b1d21; --panel-2:#20232a; --text:#f7f7f7; --muted:#b8b8c2;
@@ -65,7 +66,7 @@ html = r"""<!DOCTYPE html>
   .credit{ text-align:center; font-size:12px; color:var(--red); margin-top:6px; display:flex; align-items:center; gap:6px; justify-content:center }
   .credit a.name{ color:var(--red); text-decoration:none } .credit a.li{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:3px; background:#0A66C2 }
   .credit a.li svg{ width:14px; height:14px; fill:#fff; display:block }
-  /* Share menu */\n  .shareMenu{ position:relative }\n  .shareList{ position:absolute; z-index:5; top:110%; left:0; background:#1b1d21; border:1px solid #2c313a; border-radius:12px; padding:8px; display:none; min-width:220px; box-shadow:var(--shadow) }\n  .shareList a, .shareList button{ display:block; width:100%; text-align:left; background:transparent; border:none; color:#e6e6e6; padding:8px 10px; border-radius:8px; cursor:pointer }\n  .shareList a:hover, .shareList button:hover{ background:#2a2f39 }\n</style>
+</style>
 </head>
 <body>
   <main class="wrap" aria-label="2048 game page">
@@ -84,17 +85,7 @@ html = r"""<!DOCTYPE html>
     <div class="row controls" role="group" aria-label="Game controls">
       <button id="btnNew" aria-label="Play or Restart game" title="Restart (R)">▶ Play / Restart</button>
       <button id="btnPause" aria-label="Pause or Resume game" title="Pause (P)">⏸ Pause</button>
-      <div class="shareMenu">
-        <button id="btnShare" aria-label="Share score and link">🔗 Share</button>
-        <div class="shareList" id="shareList" role="menu" aria-label="Share options">
-          <button id="copyBtn">Copy link</button>
-          <a id="tw" target="_blank" rel="noopener">Share on X (Twitter)</a>
-          <a id="li" target="_blank" rel="noopener">Share on LinkedIn</a>
-          <a id="wa" target="_blank" rel="noopener">Share on WhatsApp</a>
-          <a id="fb" target="_blank" rel="noopener">Share on Facebook</a>
-          <a id="tg" target="_blank" rel="noopener">Share on Telegram</a>
-        </div>
-      </div>
+      <button id="btnCopy" aria-label="Copy shareable link">📋 Copy link</button>
       <div class="toggle">
         <input type="checkbox" id="soundToggle" aria-label="Toggle sound effects" />
         <label for="soundToggle" class="muted">Sound</label>
@@ -157,7 +148,8 @@ html = r"""<!DOCTYPE html>
 (() => {
   const DEPLOY_URL = "https://monikakushwaha1411.github.io/2048_game/";
   const SIZE=4, PROB_4=0.10, MOVE_MS=140; let nextId=1; let tiles=new Map(); let score=0;
-  let best=Number(localStorage.getItem('best2048')||0); let player=(new URLSearchParams(location.search).get('player')||localStorage.getItem('player2048')||'');
+  let best=Number(localStorage.getItem('best2048')||0);
+  let player=(new URLSearchParams(location.search).get('player')||localStorage.getItem('player2048')||'');
   let playing=false, won=false, locked=false, paused=false; let startTime=null, timerHandle=null;
 
   const elScore=document.getElementById('score'), elBest=document.getElementById('best'), elTime=document.getElementById('time');
@@ -167,11 +159,9 @@ html = r"""<!DOCTYPE html>
   const elContinue=document.getElementById('btnContinue'), soundToggle=document.getElementById('soundToggle');
   const elPlayerBest=document.getElementById('playerBest');
   const nameModal=document.getElementById('nameModal'), nameInput=document.getElementById('playerName'), saveNameBtn=document.getElementById('saveName');
-  const btnShare=document.getElementById('btnShare'), shareList=document.getElementById('shareList');
-  const aTw=document.getElementById('tw'), aLi=document.getElementById('li'), aWa=document.getElementById('wa'), aFb=document.getElementById('fb'), aTg=document.getElementById('tg'), copyBtn=document.getElementById('copyBtn');
+  const btnCopy=document.getElementById('btnCopy');
 
   elBest.textContent = best;
-
   function playerKey(){ return `best2048_${(player||'').toLowerCase().trim()}`; }
   function getPlayerBest(){ return player ? Number(localStorage.getItem(playerKey())||0) : 0; }
   function setPlayerBest(v){ if(player) localStorage.setItem(playerKey(), String(v)); }
@@ -343,45 +333,31 @@ html = r"""<!DOCTYPE html>
 
   ensurePlayerName(); if(player) reset();
 
-  // ===== Share =====
-  function makeShareLink(){
+  // ===== Copy link (includes player's name as ?player=NAME) =====
+  function buildLink(){
     const params = new URLSearchParams({ player: player || '' });
-    const url = DEPLOY_URL + (params.toString() ? ('?' + params.toString()) : '');
-    const text = `${player || 'I'} scored ${score} in 2048! Play now:`;
-    return { url, text };
+    return "https://monikakushwaha1411.github.io/2048_game/" + (params.toString() ? ("?" + params.toString()) : "");
   }
-  function setShareLinks(){
-    const {url, text} = makeShareLink();
-    aTw.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    aLi.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-    aWa.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`;
-    aFb.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    aTg.href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-  }
-  setShareLinks();
-
-  btnShare.addEventListener('click', async () => {
-    const {url, text} = makeShareLink();
-    if (navigator.share) {
-      try{ await navigator.share({ title: '2048 — Retro', text, url }); }
-      catch(_){} // ignore
-    } else {
-      shareList.style.display = shareList.style.display === 'block' ? 'none' : 'block';
-      setShareLinks();
+  btnCopy.addEventListener('click', async () => {
+    const url = buildLink();
+    try{
+      await navigator.clipboard.writeText(url);
+      btnCopy.textContent = "✅ Copied";
+      setTimeout(()=> btnCopy.textContent = "📋 Copy link", 1200);
+    }catch{
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove();
+      btnCopy.textContent = "✅ Copied";
+      setTimeout(()=> btnCopy.textContent = "📋 Copy link", 1200);
     }
   });
-  document.addEventListener('click', (e)=>{
-    if(!shareList.contains(e.target) && e.target !== btnShare){ shareList.style.display = 'none'; }
-  });
-  copyBtn.addEventListener('click', async ()=>{
-    const {url} = makeShareLink();
-    try{ await navigator.clipboard.writeText(url); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy link', 1200); }catch{}
-  });
-})();
-</script>
+
+})();</script>
 </body>
 </html>
 """
-path = "/mnt/data/2048_monika_share.html"
+path = "/mnt/data/2048_monika_copy_only.html"
 Path(path).write_text(html, encoding="utf-8")
 path
