@@ -1,8 +1,4 @@
-# Build a clean single-file HTML with *only* a "Copy link" (no social networks) 
-# and ensure no stray text outside the HTML block.
-from pathlib import Path
-
-html = r"""<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -357,7 +353,4 @@ html = r"""<!DOCTYPE html>
 })();</script>
 </body>
 </html>
-"""
-path = "/mnt/data/2048_monika_copy_only.html"
-Path(path).write_text(html, encoding="utf-8")
-path
+
